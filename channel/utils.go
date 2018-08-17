@@ -1,4 +1,4 @@
-package go_itertools
+package channel
 
 import "reflect"
 

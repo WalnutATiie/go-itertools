@@ -1,36 +1,39 @@
-package go_itertools
+package channel
 
 import (
 	"fmt"
+	"runtime"
 	"testing"
 )
 
 func TestNext(t *testing.T) {
 	i := New(1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
 	defer Finalizer(i)
-	fmt.Println(i.Next())
-	fmt.Println(i.Next())
-	fmt.Println(i.Next())
-	fmt.Println(i.Next())
-	fmt.Println(i.Next())
-	fmt.Println(i.Next())
-	fmt.Println(i.Next())
-	fmt.Println(i.Next())
-	fmt.Println(i.Next())
-	fmt.Println(i.Next())
+	i.Next()
+	i.Next()
+	i.Next()
+	i.Next()
+	i.Next()
+	i.Next()
+	i.Next()
+	i.Next()
+	i.Next()
+	i.Next()
 }
 
 func TestCountInt(t *testing.T) {
+
 	i := Count(0, 10)
 	defer Finalizer(i)
 	m := 0
 	for value := range Iter(i) {
-		fmt.Println(value)
+		value = value
 		m += 1
 		if m > 10 {
 			break
 		}
 	}
+	fmt.Println(runtime.NumGoroutine())
 }
 
 func TestCountFloat32(t *testing.T) {
@@ -117,5 +120,4 @@ func TestImap(t *testing.T) {
 	for value := range Iter(c) {
 		fmt.Println(value)
 	}
-
 }

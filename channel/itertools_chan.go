@@ -1,8 +1,10 @@
-package go_itertools
+package channel
 
 import (
 	"math"
 	"reflect"
+
+	"runtime"
 
 	"golang.org/x/tools/container/intsets"
 )
@@ -17,10 +19,12 @@ const (
 )
 
 func newIterMgr() *IterMgr {
-	return &IterMgr{
+	iter := &IterMgr{
 		c:      make(chan interface{}),
 		signal: make(chan interface{}),
 	}
+	runtime.SetFinalizer(iter, Finalizer)
+	return iter
 }
 
 func New(items ...interface{}) *IterMgr {
@@ -32,9 +36,10 @@ func New(items ...interface{}) *IterMgr {
 			case iter.c <- i:
 			case <-iter.signal:
 				flag = true
-				break
+				goto close
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -96,9 +101,10 @@ func countInt(start int, step int) *IterMgr {
 			case iter.c <- i:
 			case <-iter.signal:
 				flag = true
-				break
+				goto close
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -113,9 +119,11 @@ func countInt64(start int64, step int64) *IterMgr {
 			case iter.c <- i:
 			case <-iter.signal:
 				flag = true
-				break
+				goto close
+
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -130,9 +138,10 @@ func countInt16(start int16, step int16) *IterMgr {
 			case iter.c <- i:
 			case <-iter.signal:
 				flag = true
-				break
+				goto close
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -142,14 +151,15 @@ func countInt32(start int32, step int32) *IterMgr {
 	iter := newIterMgr()
 	go func() {
 		flag := false
-		for i := start; i < math.MaxInt32; i += step {
+		for i := start; i < math.MaxInt32 && !flag; i += step {
 			select {
 			case iter.c <- i:
 			case <-iter.signal:
 				flag = true
-				break
+				goto close
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -164,9 +174,10 @@ func countInt8(start int8, step int8) *IterMgr {
 			case iter.c <- i:
 			case <-iter.signal:
 				flag = true
-				break
+				goto close
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -181,9 +192,10 @@ func countFloat32(start float32, step float32) *IterMgr {
 			case iter.c <- i:
 			case <-iter.signal:
 				flag = true
-				break
+				goto close
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -198,9 +210,10 @@ func countFloat64(start float64, step float64) *IterMgr {
 			case iter.c <- i:
 			case <-iter.signal:
 				flag = true
-				break
+				goto close
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -233,10 +246,11 @@ func cycString(item string) *IterMgr {
 				case iter.c <- string(i):
 				case <-iter.signal:
 					flag = true
-					break
+					goto close
 				}
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -256,10 +270,11 @@ func cycIterMgr(item *IterMgr) *IterMgr {
 				case iter.c <- i:
 				case <-iter.signal:
 					flag = true
-					break
+					goto close
 				}
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -275,10 +290,11 @@ func cycSlice(item []interface{}) *IterMgr {
 				case iter.c <- i:
 				case <-iter.signal:
 					flag = true
-					break
+					goto close
 				}
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -294,10 +310,11 @@ func cycMap(item map[string]interface{}) *IterMgr {
 				case iter.c <- i:
 				case <-iter.signal:
 					flag = true
-					break
+					goto close
 				}
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -313,10 +330,11 @@ func DropWhile(lambda func(interface{}) bool, i *IterMgr) *IterMgr {
 				case iter.c <- i:
 				case <-iter.signal:
 					flag = true
-					break
+					goto close
 				}
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -331,9 +349,10 @@ func Repeat(item interface{}, times int) *IterMgr {
 			case iter.c <- item:
 			case <-iter.signal:
 				flag = true
-				break
+				goto close
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
@@ -348,9 +367,10 @@ func Imap(f func(a interface{}, b interface{}) interface{}, aIter *IterMgr, bIte
 			case iter.c <- f(value, bIter.Next()):
 			case <-iter.signal:
 				flag = true
-				break
+				goto close
 			}
 		}
+	close:
 		iter.closeChan(flag)
 	}()
 	return iter
